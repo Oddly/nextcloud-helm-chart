@@ -1,306 +1,8 @@
-# =============================================================================
-# NEXTCLOUD HELM CHART - COMPREHENSIVE CONFIGURATION
-# =============================================================================
-# Uses bjw-s app-template library chart
-# Full-featured deployment with PostgreSQL, Redis, CronJob, and all Nextcloud options
+# Nextcloud Helm Chart - Minimal Configuration
+# For all available options, see values-reference.yaml
 
-# =============================================================================
-# NEXTCLOUD-SPECIFIC SETTINGS (User-friendly interface)
-# =============================================================================
-
-nextcloud:
-  # ---------------------------------------------------------------------------
-  # Image Configuration
-  # ---------------------------------------------------------------------------
-  image:
-    repository: nextcloud
-    tag: "30.0.2-apache"
-    pullPolicy: IfNotPresent
-
-  # ---------------------------------------------------------------------------
-  # Admin Account (created on first install)
-  # ---------------------------------------------------------------------------
-  admin:
-    # Use existingSecret to reference a pre-created secret
-    # Secret must contain: admin-user, admin-password
-    existingSecret: "nextcloud-credentials"
-    # Or set directly (only used if existingSecret is empty)
-    user: "admin"
-    password: ""  # Leave empty to auto-generate
-
-  # ---------------------------------------------------------------------------
-  # Trusted Domains (space-separated)
-  # ---------------------------------------------------------------------------
-  trustedDomains: "nextcloud.local localhost nextcloud.crauwels.xyz"
-
-  # ---------------------------------------------------------------------------
-  # Data Directory
-  # ---------------------------------------------------------------------------
-  dataDir: "/var/www/html/data"
-
-  # ---------------------------------------------------------------------------
-  # Update/Installation Control
-  # ---------------------------------------------------------------------------
-  # Set to "1" to enable installation/update on container start
-  update: "1"
-  # Set to "true" to update .htaccess after initialization
-  initHtaccess: "true"
-
-  # ---------------------------------------------------------------------------
-  # PHP Configuration
-  # ---------------------------------------------------------------------------
-  php:
-    memoryLimit: "1024M"
-    uploadLimit: "16G"
-    opcacheMemoryConsumption: "128"
-
-  # ---------------------------------------------------------------------------
-  # Apache Configuration
-  # ---------------------------------------------------------------------------
-  apache:
-    # HTTP request body size limit in bytes (0 = unlimited)
-    bodyLimit: "0"
-    # Disable IP rewriting (set to "1" to disable)
-    disableRewriteIp: ""
-
-  # ---------------------------------------------------------------------------
-  # Reverse Proxy Configuration
-  # ---------------------------------------------------------------------------
-  reverseProxy:
-    # Protocol used by reverse proxy (http or https)
-    overwriteProtocol: "https"
-    # Hostname used by reverse proxy (can include port)
-    overwriteHost: ""
-    # Absolute path used by reverse proxy
-    overwriteWebroot: ""
-    # URL used for CLI operations
-    overwriteCliUrl: ""
-    # Regex to conditionally apply overwrites
-    overwriteCondAddr: ""
-    # Space-separated trusted proxy IPs (supports CIDR for IPv4)
-    trustedProxies: ""
-    # HTTP headers containing original client IP
-    forwardedForHeaders: ""
-
-  # ---------------------------------------------------------------------------
-  # Database Configuration
-  # ---------------------------------------------------------------------------
-  database:
-    # Type: internal (uses bundled PostgreSQL) or external
-    type: "internal"
-    # External database settings (only used when type=external)
-    external:
-      # Database type: postgres, mysql, sqlite
-      dbType: "postgres"
-      host: ""
-      name: "nextcloud"
-      user: ""
-      password: ""
-      # Use existingSecret for credentials
-      existingSecret: ""
-      secretKeys:
-        user: "db-user"
-        password: "db-password"
-
-  # ---------------------------------------------------------------------------
-  # Redis Cache Configuration
-  # ---------------------------------------------------------------------------
-  redis:
-    # Enable Redis caching
-    enabled: true
-    # Type: internal (uses bundled Redis) or external
-    type: "internal"
-    # External Redis settings (only used when type=external)
-    external:
-      host: ""
-      port: "6379"
-      user: ""
-      password: ""
-      existingSecret: ""
-      secretKeys:
-        password: "redis-password"
-
-  # ---------------------------------------------------------------------------
-  # SMTP / Email Configuration
-  # ---------------------------------------------------------------------------
-  smtp:
-    enabled: false
-    host: ""
-    # Security: ssl, tls, or empty for none
-    secure: ""
-    # Port: 465 for SSL, 587 for TLS, 25 for none
-    port: ""
-    # Auth type: LOGIN, PLAIN, or empty
-    authType: "LOGIN"
-    user: ""
-    password: ""
-    # From address settings
-    fromAddress: "nextcloud"
-    domain: ""
-    # Use existingSecret for credentials
-    existingSecret: ""
-    secretKeys:
-      user: "smtp-user"
-      password: "smtp-password"
-
-  # ---------------------------------------------------------------------------
-  # S3 Object Storage (Primary Storage)
-  # ---------------------------------------------------------------------------
-  objectStorage:
-    s3:
-      enabled: false
-      bucket: ""
-      region: ""
-      host: ""
-      port: ""
-      # Set to false for non-SSL endpoints
-      ssl: "true"
-      # Use path-style URLs (required for MinIO)
-      usePathStyle: "false"
-      # Storage class (STANDARD, REDUCED_REDUNDANCY, etc.)
-      storageClass: ""
-      # Auto-create bucket if it doesn't exist
-      autoCreate: "true"
-      # Legacy authentication
-      legacyAuth: "false"
-      # Object prefix (default: urn:oid:)
-      objectPrefix: ""
-      # SSE-C encryption key (base64-encoded)
-      sseCKey: ""
-      # Credentials
-      accessKey: ""
-      secretKey: ""
-      existingSecret: ""
-      secretKeys:
-        accessKey: "s3-access-key"
-        secretKey: "s3-secret-key"
-
-    # -------------------------------------------------------------------------
-    # OpenStack Swift Object Storage
-    # -------------------------------------------------------------------------
-    swift:
-      enabled: false
-      url: ""  # Keystone identity endpoint
-      userName: ""
-      userPassword: ""
-      userDomain: "Default"
-      projectName: ""
-      projectDomain: "Default"
-      serviceName: "swift"
-      region: ""
-      containerName: ""
-      autoCreate: "false"
-      existingSecret: ""
-      secretKeys:
-        userName: "swift-user"
-        userPassword: "swift-password"
-
-  # ---------------------------------------------------------------------------
-  # Cron Job Configuration
-  # ---------------------------------------------------------------------------
-  cron:
-    enabled: true
-    # Cron schedule (default: every 5 minutes)
-    schedule: "*/5 * * * *"
-    # How many successful job history to keep
-    successfulJobsHistory: 1
-    # How many failed job history to keep
-    failedJobsHistory: 1
-
-  # ---------------------------------------------------------------------------
-  # Resources
-  # ---------------------------------------------------------------------------
-  resources:
-    requests:
-      cpu: "250m"
-      memory: "512Mi"
-    limits:
-      cpu: "2000m"
-      memory: "2Gi"
-
-# =============================================================================
-# POSTGRESQL CONFIGURATION (Internal Database)
-# =============================================================================
-postgresql:
-  enabled: true
-  image:
-    repository: postgres
-    tag: "16-alpine"
-  # Credentials managed via nextcloud-credentials secret
-  database: "nextcloud"
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "1000m"
-      memory: "1Gi"
-  persistence:
-    enabled: true
-    storageClass: "local-path-ssd"
-    size: "10Gi"
-
-# =============================================================================
-# REDIS CONFIGURATION (Internal Cache)
-# =============================================================================
-redis:
-  enabled: true
-  image:
-    repository: redis
-    tag: "7-alpine"
-  # Password managed via nextcloud-credentials secret
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "64Mi"
-    limits:
-      cpu: "500m"
-      memory: "256Mi"
-  persistence:
-    enabled: true
-    storageClass: "local-path-ssd"
-    size: "1Gi"
-
-# =============================================================================
-# PERSISTENCE CONFIGURATION
-# =============================================================================
-persistence:
-  data:
-    enabled: true
-    storageClass: "local-path-hdd"
-    size: "100Gi"
-    accessMode: "ReadWriteOnce"
-
-# =============================================================================
-# INGRESS CONFIGURATION
-# =============================================================================
-ingress:
-  enabled: true
-  className: "tailscale"
-  annotations:
-    tailscale.com/hostname: "nextcloud"
-  hosts:
-    - host: "nextcloud"
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-# =============================================================================
-# SERVICE CONFIGURATION
-# =============================================================================
-service:
-  type: ClusterIP
-  port: 80
-
-# =============================================================================
-# APP-TEMPLATE CONFIGURATION (Generated from above settings)
-# =============================================================================
 app-template:
   controllers:
-    # -------------------------------------------------------------------------
-    # Main Nextcloud Application
-    # -------------------------------------------------------------------------
     main:
       type: deployment
       replicas: 1
@@ -316,13 +18,9 @@ app-template:
           image:
             repository: nextcloud
             tag: "30.0.2-apache"
-            pullPolicy: IfNotPresent
 
           env:
-            # Timezone
             TZ: "UTC"
-
-            # Admin credentials
             NEXTCLOUD_ADMIN_USER:
               valueFrom:
                 secretKeyRef:
@@ -333,18 +31,7 @@ app-template:
                 secretKeyRef:
                   name: nextcloud-credentials
                   key: admin-password
-
-            # Trusted domains
             NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.local localhost nextcloud.crauwels.xyz"
-
-            # Data directory
-            NEXTCLOUD_DATA_DIR: "/var/www/html/data"
-
-            # Update control
-            NEXTCLOUD_UPDATE: "1"
-            NEXTCLOUD_INIT_HTACCESS: "true"
-
-            # PostgreSQL Database
             POSTGRES_HOST: "nextcloud-postgresql"
             POSTGRES_DB: "nextcloud"
             POSTGRES_USER:
@@ -357,8 +44,6 @@ app-template:
                 secretKeyRef:
                   name: nextcloud-credentials
                   key: postgres-password
-
-            # Redis Cache
             REDIS_HOST: "nextcloud-redis"
             REDIS_HOST_PORT: "6379"
             REDIS_HOST_PASSWORD:
@@ -366,16 +51,9 @@ app-template:
                 secretKeyRef:
                   name: nextcloud-credentials
                   key: redis-password
-
-            # PHP Configuration
             PHP_MEMORY_LIMIT: "1024M"
             PHP_UPLOAD_LIMIT: "16G"
-            PHP_OPCACHE_MEMORY_CONSUMPTION: "128"
-
-            # Apache Configuration
             APACHE_BODY_LIMIT: "0"
-
-            # Reverse proxy settings
             OVERWRITEPROTOCOL: "https"
 
           probes:
@@ -430,9 +108,6 @@ app-template:
               cpu: 2000m
               memory: 2Gi
 
-    # -------------------------------------------------------------------------
-    # PostgreSQL Database
-    # -------------------------------------------------------------------------
     postgresql:
       type: deployment
       replicas: 1
@@ -447,7 +122,6 @@ app-template:
           image:
             repository: postgres
             tag: "16-alpine"
-            pullPolicy: IfNotPresent
 
           env:
             POSTGRES_DB: nextcloud
@@ -469,12 +143,7 @@ app-template:
               custom: true
               spec:
                 exec:
-                  command:
-                    - pg_isready
-                    - -U
-                    - nextcloud
-                    - -d
-                    - nextcloud
+                  command: ["pg_isready", "-U", "nextcloud", "-d", "nextcloud"]
                 initialDelaySeconds: 30
                 periodSeconds: 10
                 timeoutSeconds: 5
@@ -484,12 +153,7 @@ app-template:
               custom: true
               spec:
                 exec:
-                  command:
-                    - pg_isready
-                    - -U
-                    - nextcloud
-                    - -d
-                    - nextcloud
+                  command: ["pg_isready", "-U", "nextcloud", "-d", "nextcloud"]
                 initialDelaySeconds: 5
                 periodSeconds: 10
                 timeoutSeconds: 5
@@ -503,9 +167,6 @@ app-template:
               cpu: 1000m
               memory: 1Gi
 
-    # -------------------------------------------------------------------------
-    # Redis Cache
-    # -------------------------------------------------------------------------
     redis:
       type: deployment
       replicas: 1
@@ -520,13 +181,9 @@ app-template:
           image:
             repository: redis
             tag: "7-alpine"
-            pullPolicy: IfNotPresent
 
-          command:
-            - redis-server
-          args:
-            - --requirepass
-            - $(REDIS_PASSWORD)
+          command: ["redis-server"]
+          args: ["--requirepass", "$(REDIS_PASSWORD)"]
 
           env:
             REDIS_PASSWORD:
@@ -565,9 +222,6 @@ app-template:
               cpu: 500m
               memory: 256Mi
 
-    # -------------------------------------------------------------------------
-    # Nextcloud Cron Job
-    # -------------------------------------------------------------------------
     cron:
       type: cronjob
 
@@ -579,6 +233,8 @@ app-template:
 
       pod:
         securityContext:
+          runAsUser: 33
+          runAsGroup: 33
           fsGroup: 33
 
       containers:
@@ -586,13 +242,13 @@ app-template:
           image:
             repository: nextcloud
             tag: "30.0.2-apache"
-            pullPolicy: IfNotPresent
 
-          command:
-            - php
-          args:
-            - -f
-            - /var/www/html/cron.php
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+
+          command: ["php"]
+          args: ["-f", "/var/www/html/cron.php"]
 
           env:
             POSTGRES_HOST: nextcloud-postgresql
@@ -623,40 +279,25 @@ app-template:
               cpu: 1000m
               memory: 1Gi
 
-  # ===========================================================================
-  # SERVICES
-  # ===========================================================================
   service:
     main:
       controller: main
-      type: ClusterIP
       ports:
         http:
           port: 80
-          targetPort: 80
-          protocol: TCP
 
     postgresql:
       controller: postgresql
-      type: ClusterIP
       ports:
         postgres:
           port: 5432
-          targetPort: 5432
-          protocol: TCP
 
     redis:
       controller: redis
-      type: ClusterIP
       ports:
         redis:
           port: 6379
-          targetPort: 6379
-          protocol: TCP
 
-  # ===========================================================================
-  # INGRESS (Tailscale)
-  # ===========================================================================
   ingress:
     main:
       enabled: true
@@ -672,9 +313,6 @@ app-template:
                 identifier: main
                 port: http
 
-  # ===========================================================================
-  # HTTPROUTE (Cilium Gateway API for .crauwels.xyz)
-  # ===========================================================================
   route:
     main:
       enabled: true
@@ -689,9 +327,6 @@ app-template:
             - name: main
               port: 80
 
-  # ===========================================================================
-  # PERSISTENCE
-  # ===========================================================================
   persistence:
     data:
       enabled: true
@@ -729,15 +364,9 @@ app-template:
           main:
             - path: /data
 
-  # ===========================================================================
-  # SERVICE ACCOUNT
-  # ===========================================================================
   serviceAccount:
     create: true
     name: nextcloud
 
-  # ===========================================================================
-  # DEFAULT POD OPTIONS
-  # ===========================================================================
   defaultPodOptions:
     automountServiceAccountToken: false
