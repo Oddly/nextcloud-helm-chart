@@ -4,14 +4,14 @@ A Helm chart for deploying [Nextcloud](https://nextcloud.com/) on Kubernetes usi
 
 ## Prerequisites
 
-- Kubernetes 1.26+
+- Kubernetes 1.28+
 - Helm 3.10+
 
 ## Dependencies
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://bjw-s-labs.github.io/helm-charts/ | app-template | 3.7.3 |
+| https://bjw-s-labs.github.io/helm-charts/ | app-template | 4.5.0 |
 
 ## Installation
 
@@ -213,7 +213,7 @@ All parameters under `app-template:` are passed directly to the [bjw-s app-templ
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `app-template.controllers.main.containers.main.image.tag` | Nextcloud image tag | `"30.0.2-apache"` |
+| `app-template.controllers.main.containers.main.image.tag` | Nextcloud image tag | `"32.0.2-apache"` |
 | `app-template.controllers.main.containers.main.env.NEXTCLOUD_TRUSTED_DOMAINS` | Trusted domains | `"nextcloud.example.com localhost"` |
 | `app-template.ingress.main.enabled` | Enable ingress | `false` |
 | `app-template.persistence.data.size` | Nextcloud data volume size | `100Gi` |
@@ -225,6 +225,23 @@ See [`values-reference.yaml`](values-reference.yaml) for the complete list of co
 
 - **Single replica only**: Horizontal scaling requires shared storage (NFS/S3) and additional configuration
 - **No automatic updates**: Nextcloud version upgrades require manual image tag changes and may need database migrations
+
+## Changelog
+
+### v2.0.0
+- **BREAKING**: Upgraded to app-template 4.5.0 (requires Kubernetes 1.28+)
+- **BREAKING**: Existing deployments must be deleted before upgrading due to label selector changes
+- Updated serviceAccount syntax for v4 compatibility
+
+### v1.1.0
+- Upgraded Nextcloud from 30.0.2 to 32.0.2
+
+### v1.0.0
+- Initial release with Nextcloud 30.0.2
+- PostgreSQL 16-alpine database
+- Redis 7-alpine caching
+- Auto-generated credentials
+- Support for ingress-nginx, Traefik, and Gateway API
 
 ## License
 
