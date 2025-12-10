@@ -31,7 +31,7 @@ app-template:
                 secretKeyRef:
                   name: nextcloud-credentials
                   key: admin-password
-            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.local localhost nextcloud.crauwels.xyz"
+            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.example.com localhost"
             POSTGRES_HOST: "nextcloud-postgresql"
             POSTGRES_DB: "nextcloud"
             POSTGRES_USER:
@@ -301,37 +301,46 @@ app-template:
   ingress:
     main:
       enabled: true
-      className: tailscale
+      className: ""  # Set to "nginx" for ingress-nginx
       annotations:
-        tailscale.com/hostname: "nextcloud"
+        # For ingress-nginx, uncomment:
+        # cert-manager.io/cluster-issuer: letsencrypt-prod
+        # nginx.ingress.kubernetes.io/proxy-body-size: "16G"
+        # nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
       hosts:
-        - host: nextcloud
+        - host: nextcloud.example.com
           paths:
             - path: /
               pathType: Prefix
               service:
                 identifier: main
                 port: http
+      tls: []
+        # - secretName: nextcloud-tls
+        #   hosts:
+        #     - nextcloud.example.com
 
-  route:
-    main:
-      enabled: true
-      parentRefs:
-        - name: external
-          namespace: kube-system
-          sectionName: https
-      hostnames:
-        - "nextcloud.crauwels.xyz"
-      rules:
-        - backendRefs:
-            - name: main
-              port: 80
+  # HTTPRoute for Gateway API (Cilium, Envoy Gateway, etc.)
+  # Uncomment and configure if using Gateway API instead of Ingress
+  # route:
+  #   main:
+  #     enabled: true
+  #     parentRefs:
+  #       - name: my-gateway
+  #         namespace: gateway-namespace
+  #         sectionName: https
+  #     hostnames:
+  #       - "nextcloud.example.com"
+  #     rules:
+  #       - backendRefs:
+  #           - name: main
+  #             port: 80
 
   persistence:
     data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-hdd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 100Gi
       advancedMounts:
@@ -345,7 +354,7 @@ app-template:
     postgresql-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-ssd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 10Gi
       advancedMounts:
@@ -356,7 +365,7 @@ app-template:
     redis-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-ssd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 1Gi
       advancedMounts:
