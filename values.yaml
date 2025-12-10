@@ -55,6 +55,15 @@ app-template:
             PHP_UPLOAD_LIMIT: "16G"
             APACHE_BODY_LIMIT: "0"
             OVERWRITEPROTOCOL: "https"
+            # SMTP Configuration (uncomment to enable)
+            # SMTP_HOST: "smtp.example.com"
+            # SMTP_SECURE: "tls"
+            # SMTP_PORT: "587"
+            # SMTP_AUTHTYPE: "LOGIN"
+            # SMTP_NAME: "user@example.com"
+            # SMTP_PASSWORD: "password"
+            # MAIL_FROM_ADDRESS: "nextcloud"
+            # MAIL_DOMAIN: "example.com"
 
           probes:
             liveness:
@@ -336,6 +345,16 @@ app-template:
   #           - name: main
   #             port: 80
 
+  # ConfigMaps for PHP/Redis session configuration
+  # Uncomment to enable Redis-based sessions (required for multi-replica)
+  # configMaps:
+  #   php-config:
+  #     enabled: true
+  #     data:
+  #       redis-session.ini: |
+  #         session.save_handler = redis
+  #         session.save_path = "tcp://nextcloud-redis:6379?auth=${REDIS_HOST_PASSWORD}"
+
   persistence:
     data:
       enabled: true
@@ -373,9 +392,77 @@ app-template:
           main:
             - path: /data
 
+    # Uncomment to mount PHP config for Redis sessions
+    # php-config:
+    #   enabled: true
+    #   type: configMap
+    #   name: nextcloud-php-config
+    #   advancedMounts:
+    #     main:
+    #       main:
+    #         - path: /usr/local/etc/php/conf.d/redis-session.ini
+    #           subPath: redis-session.ini
+
   serviceAccount:
     create: true
     name: nextcloud
 
+  # ServiceMonitor for Prometheus (requires prometheus-operator)
+  # serviceMonitor:
+  #   main:
+  #     enabled: true
+  #     endpoints:
+  #       - port: http
+  #         path: /ocs/v2.php/apps/serverinfo/api/v1/info
+  #         params:
+  #           format: ["json"]
+  #         interval: 60s
+
+  # Network Policies - restrict traffic to only necessary connections
+  # networkpolicies:
+  #   main:
+  #     enabled: true
+  #     controller: main
+  #     policyTypes:
+  #       - Ingress
+  #       - Egress
+  #     rules:
+  #       ingress:
+  #         - from:
+  #             - namespaceSelector: {}  # Allow from any namespace (ingress controller)
+  #           ports:
+  #             - protocol: TCP
+  #               port: 80
+  #       egress:
+  #         - to:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: postgresql
+  #           ports:
+  #             - protocol: TCP
+  #               port: 5432
+  #         - to:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: redis
+  #           ports:
+  #             - protocol: TCP
+  #               port: 6379
+  #         - to:  # Allow DNS
+  #             - namespaceSelector: {}
+  #           ports:
+  #             - protocol: UDP
+  #               port: 53
+  #         - to:  # Allow external HTTPS (for apps, updates)
+  #             - ipBlock:
+  #                 cidr: 0.0.0.0/0
+  #           ports:
+  #             - protocol: TCP
+  #               port: 443
+
   defaultPodOptions:
     automountServiceAccountToken: false
+    # Pod Disruption Budget (useful when replicas > 1)
+    # podDisruptionBudget:
+    #   enabled: true
+    #   minAvailable: 1

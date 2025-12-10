@@ -1,301 +1,108 @@
 # =============================================================================
-# NEXTCLOUD HELM CHART - COMPREHENSIVE CONFIGURATION
+# NEXTCLOUD HELM CHART - COMPREHENSIVE CONFIGURATION REFERENCE
 # =============================================================================
 # Uses bjw-s app-template library chart
 # Full-featured deployment with PostgreSQL, Redis, CronJob, and all Nextcloud options
+#
+# This file documents ALL available configuration options.
+# For a minimal working configuration, see values.yaml
 
 # =============================================================================
-# NEXTCLOUD-SPECIFIC SETTINGS (User-friendly interface)
+# ENVIRONMENT VARIABLES REFERENCE
 # =============================================================================
-
-nextcloud:
-  # ---------------------------------------------------------------------------
-  # Image Configuration
-  # ---------------------------------------------------------------------------
-  image:
-    repository: nextcloud
-    tag: "30.0.2-apache"
-    pullPolicy: IfNotPresent
-
-  # ---------------------------------------------------------------------------
-  # Admin Account (created on first install)
-  # ---------------------------------------------------------------------------
-  admin:
-    # Use existingSecret to reference a pre-created secret
-    # Secret must contain: admin-user, admin-password
-    existingSecret: "nextcloud-credentials"
-    # Or set directly (only used if existingSecret is empty)
-    user: "admin"
-    password: ""  # Leave empty to auto-generate
-
-  # ---------------------------------------------------------------------------
-  # Trusted Domains (space-separated)
-  # ---------------------------------------------------------------------------
-  trustedDomains: "nextcloud.local localhost nextcloud.crauwels.xyz"
-
-  # ---------------------------------------------------------------------------
-  # Data Directory
-  # ---------------------------------------------------------------------------
-  dataDir: "/var/www/html/data"
-
-  # ---------------------------------------------------------------------------
-  # Update/Installation Control
-  # ---------------------------------------------------------------------------
-  # Set to "1" to enable installation/update on container start
-  update: "1"
-  # Set to "true" to update .htaccess after initialization
-  initHtaccess: "true"
-
-  # ---------------------------------------------------------------------------
-  # PHP Configuration
-  # ---------------------------------------------------------------------------
-  php:
-    memoryLimit: "1024M"
-    uploadLimit: "16G"
-    opcacheMemoryConsumption: "128"
-
-  # ---------------------------------------------------------------------------
-  # Apache Configuration
-  # ---------------------------------------------------------------------------
-  apache:
-    # HTTP request body size limit in bytes (0 = unlimited)
-    bodyLimit: "0"
-    # Disable IP rewriting (set to "1" to disable)
-    disableRewriteIp: ""
-
-  # ---------------------------------------------------------------------------
-  # Reverse Proxy Configuration
-  # ---------------------------------------------------------------------------
-  reverseProxy:
-    # Protocol used by reverse proxy (http or https)
-    overwriteProtocol: "https"
-    # Hostname used by reverse proxy (can include port)
-    overwriteHost: ""
-    # Absolute path used by reverse proxy
-    overwriteWebroot: ""
-    # URL used for CLI operations
-    overwriteCliUrl: ""
-    # Regex to conditionally apply overwrites
-    overwriteCondAddr: ""
-    # Space-separated trusted proxy IPs (supports CIDR for IPv4)
-    trustedProxies: ""
-    # HTTP headers containing original client IP
-    forwardedForHeaders: ""
-
-  # ---------------------------------------------------------------------------
-  # Database Configuration
-  # ---------------------------------------------------------------------------
-  database:
-    # Type: internal (uses bundled PostgreSQL) or external
-    type: "internal"
-    # External database settings (only used when type=external)
-    external:
-      # Database type: postgres, mysql, sqlite
-      dbType: "postgres"
-      host: ""
-      name: "nextcloud"
-      user: ""
-      password: ""
-      # Use existingSecret for credentials
-      existingSecret: ""
-      secretKeys:
-        user: "db-user"
-        password: "db-password"
-
-  # ---------------------------------------------------------------------------
-  # Redis Cache Configuration
-  # ---------------------------------------------------------------------------
-  redis:
-    # Enable Redis caching
-    enabled: true
-    # Type: internal (uses bundled Redis) or external
-    type: "internal"
-    # External Redis settings (only used when type=external)
-    external:
-      host: ""
-      port: "6379"
-      user: ""
-      password: ""
-      existingSecret: ""
-      secretKeys:
-        password: "redis-password"
-
-  # ---------------------------------------------------------------------------
-  # SMTP / Email Configuration
-  # ---------------------------------------------------------------------------
-  smtp:
-    enabled: false
-    host: ""
-    # Security: ssl, tls, or empty for none
-    secure: ""
-    # Port: 465 for SSL, 587 for TLS, 25 for none
-    port: ""
-    # Auth type: LOGIN, PLAIN, or empty
-    authType: "LOGIN"
-    user: ""
-    password: ""
-    # From address settings
-    fromAddress: "nextcloud"
-    domain: ""
-    # Use existingSecret for credentials
-    existingSecret: ""
-    secretKeys:
-      user: "smtp-user"
-      password: "smtp-password"
-
-  # ---------------------------------------------------------------------------
-  # S3 Object Storage (Primary Storage)
-  # ---------------------------------------------------------------------------
-  objectStorage:
-    s3:
-      enabled: false
-      bucket: ""
-      region: ""
-      host: ""
-      port: ""
-      # Set to false for non-SSL endpoints
-      ssl: "true"
-      # Use path-style URLs (required for MinIO)
-      usePathStyle: "false"
-      # Storage class (STANDARD, REDUCED_REDUNDANCY, etc.)
-      storageClass: ""
-      # Auto-create bucket if it doesn't exist
-      autoCreate: "true"
-      # Legacy authentication
-      legacyAuth: "false"
-      # Object prefix (default: urn:oid:)
-      objectPrefix: ""
-      # SSE-C encryption key (base64-encoded)
-      sseCKey: ""
-      # Credentials
-      accessKey: ""
-      secretKey: ""
-      existingSecret: ""
-      secretKeys:
-        accessKey: "s3-access-key"
-        secretKey: "s3-secret-key"
-
-    # -------------------------------------------------------------------------
-    # OpenStack Swift Object Storage
-    # -------------------------------------------------------------------------
-    swift:
-      enabled: false
-      url: ""  # Keystone identity endpoint
-      userName: ""
-      userPassword: ""
-      userDomain: "Default"
-      projectName: ""
-      projectDomain: "Default"
-      serviceName: "swift"
-      region: ""
-      containerName: ""
-      autoCreate: "false"
-      existingSecret: ""
-      secretKeys:
-        userName: "swift-user"
-        userPassword: "swift-password"
-
-  # ---------------------------------------------------------------------------
-  # Cron Job Configuration
-  # ---------------------------------------------------------------------------
-  cron:
-    enabled: true
-    # Cron schedule (default: every 5 minutes)
-    schedule: "*/5 * * * *"
-    # How many successful job history to keep
-    successfulJobsHistory: 1
-    # How many failed job history to keep
-    failedJobsHistory: 1
-
-  # ---------------------------------------------------------------------------
-  # Resources
-  # ---------------------------------------------------------------------------
-  resources:
-    requests:
-      cpu: "250m"
-      memory: "512Mi"
-    limits:
-      cpu: "2000m"
-      memory: "2Gi"
+# All Nextcloud Docker environment variables can be set via:
+#   app-template.controllers.main.containers.main.env.<VAR_NAME>
+#
+# Core Variables:
+#   TZ                           - Timezone (e.g., "Europe/Brussels", "UTC")
+#   NEXTCLOUD_ADMIN_USER         - Admin username (first install only)
+#   NEXTCLOUD_ADMIN_PASSWORD     - Admin password (first install only)
+#   NEXTCLOUD_TRUSTED_DOMAINS    - Space-separated trusted domains
+#   NEXTCLOUD_DATA_DIR           - Data directory (default: /var/www/html/data)
+#   NEXTCLOUD_UPDATE             - Set to "1" to enable updates on startup
+#   NEXTCLOUD_INIT_HTACCESS      - Set to "true" to update .htaccess
+#
+# Database Variables (PostgreSQL):
+#   POSTGRES_HOST                - PostgreSQL hostname
+#   POSTGRES_DB                  - Database name
+#   POSTGRES_USER                - Database user
+#   POSTGRES_PASSWORD            - Database password
+#
+# Database Variables (MySQL/MariaDB):
+#   MYSQL_HOST                   - MySQL hostname
+#   MYSQL_DATABASE               - Database name
+#   MYSQL_USER                   - Database user
+#   MYSQL_PASSWORD               - Database password
+#
+# Database Variables (SQLite):
+#   SQLITE_DATABASE              - SQLite database name
+#
+# Redis Variables:
+#   REDIS_HOST                   - Redis hostname
+#   REDIS_HOST_PORT              - Redis port (default: 6379)
+#   REDIS_HOST_PASSWORD          - Redis password
+#   REDIS_HOST_USER              - Redis username (optional, ACL)
+#
+# PHP Variables:
+#   PHP_MEMORY_LIMIT             - PHP memory limit (e.g., "1024M")
+#   PHP_UPLOAD_LIMIT             - Max upload size (e.g., "16G")
+#   PHP_OPCACHE_MEMORY_CONSUMPTION - OPcache memory (e.g., "128")
+#
+# Apache Variables:
+#   APACHE_BODY_LIMIT            - Request body limit in bytes (0 = unlimited)
+#   APACHE_DISABLE_REWRITE_IP    - Set to "1" to disable IP rewriting
+#
+# Reverse Proxy Variables:
+#   OVERWRITEPROTOCOL            - Protocol (http, https)
+#   OVERWRITEHOST                - Hostname override
+#   OVERWRITEWEBROOT             - Webroot path override
+#   OVERWRITECLIURL              - CLI URL override
+#   OVERWRITECONDADDR            - Conditional address regex
+#   TRUSTED_PROXIES              - Space-separated proxy IPs/CIDRs
+#   NC_DEFAULT_PHONE_REGION      - Default phone region (ISO 3166-1 alpha-2)
+#
+# SMTP Variables:
+#   SMTP_HOST                    - SMTP server hostname
+#   SMTP_SECURE                  - Security: "ssl", "tls", or empty
+#   SMTP_PORT                    - SMTP port (25, 465, 587)
+#   SMTP_AUTHTYPE                - Auth type: "LOGIN", "PLAIN", or empty
+#   SMTP_NAME                    - SMTP username
+#   SMTP_PASSWORD                - SMTP password
+#   MAIL_FROM_ADDRESS            - From address (local part, without @domain)
+#   MAIL_DOMAIN                  - Mail domain
+#
+# S3 Object Storage Variables:
+#   OBJECTSTORE_S3_BUCKET        - S3 bucket name
+#   OBJECTSTORE_S3_REGION        - AWS region
+#   OBJECTSTORE_S3_HOST          - S3 endpoint hostname
+#   OBJECTSTORE_S3_PORT          - S3 endpoint port
+#   OBJECTSTORE_S3_SSL           - Use SSL (true/false)
+#   OBJECTSTORE_S3_USEPATH_STYLE - Use path-style URLs (true for MinIO)
+#   OBJECTSTORE_S3_OBJECT_PREFIX - Object prefix (default: urn:oid:)
+#   OBJECTSTORE_S3_AUTOCREATE    - Auto-create bucket (true/false)
+#   OBJECTSTORE_S3_KEY           - Access key
+#   OBJECTSTORE_S3_SECRET        - Secret key
+#   OBJECTSTORE_S3_LEGACYAUTH    - Use legacy auth (true/false)
+#   OBJECTSTORE_S3_SSE_C_KEY     - SSE-C encryption key (base64)
+#   OBJECTSTORE_S3_STORAGE_CLASS - Storage class (STANDARD, etc.)
+#
+# Swift Object Storage Variables:
+#   OBJECTSTORE_SWIFT_URL        - Keystone identity endpoint
+#   OBJECTSTORE_SWIFT_USER_NAME  - Swift username
+#   OBJECTSTORE_SWIFT_USER_PASSWORD - Swift password
+#   OBJECTSTORE_SWIFT_USER_DOMAIN - User domain (Default)
+#   OBJECTSTORE_SWIFT_PROJECT_NAME - Project name
+#   OBJECTSTORE_SWIFT_PROJECT_DOMAIN - Project domain (Default)
+#   OBJECTSTORE_SWIFT_SERVICE_NAME - Service name (swift)
+#   OBJECTSTORE_SWIFT_REGION     - Swift region
+#   OBJECTSTORE_SWIFT_CONTAINER_NAME - Container name
+#   OBJECTSTORE_SWIFT_AUTOCREATE - Auto-create container (true/false)
 
 # =============================================================================
-# POSTGRESQL CONFIGURATION (Internal Database)
+# APP-TEMPLATE CONFIGURATION
 # =============================================================================
-postgresql:
-  enabled: true
-  image:
-    repository: postgres
-    tag: "16-alpine"
-  # Credentials managed via nextcloud-credentials secret
-  database: "nextcloud"
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "256Mi"
-    limits:
-      cpu: "1000m"
-      memory: "1Gi"
-  persistence:
-    enabled: true
-    storageClass: "local-path-ssd"
-    size: "10Gi"
+# This section shows the full bjw-s app-template structure with all options
 
-# =============================================================================
-# REDIS CONFIGURATION (Internal Cache)
-# =============================================================================
-redis:
-  enabled: true
-  image:
-    repository: redis
-    tag: "7-alpine"
-  # Password managed via nextcloud-credentials secret
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "64Mi"
-    limits:
-      cpu: "500m"
-      memory: "256Mi"
-  persistence:
-    enabled: true
-    storageClass: "local-path-ssd"
-    size: "1Gi"
-
-# =============================================================================
-# PERSISTENCE CONFIGURATION
-# =============================================================================
-persistence:
-  data:
-    enabled: true
-    storageClass: "local-path-hdd"
-    size: "100Gi"
-    accessMode: "ReadWriteOnce"
-
-# =============================================================================
-# INGRESS CONFIGURATION
-# =============================================================================
-ingress:
-  enabled: true
-  className: "tailscale"
-  annotations:
-    tailscale.com/hostname: "nextcloud"
-  hosts:
-    - host: "nextcloud"
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-# =============================================================================
-# SERVICE CONFIGURATION
-# =============================================================================
-service:
-  type: ClusterIP
-  port: 80
-
-# =============================================================================
-# APP-TEMPLATE CONFIGURATION (Generated from above settings)
-# =============================================================================
 app-template:
   controllers:
     # -------------------------------------------------------------------------
@@ -322,7 +129,7 @@ app-template:
             # Timezone
             TZ: "UTC"
 
-            # Admin credentials
+            # Admin credentials (from secret)
             NEXTCLOUD_ADMIN_USER:
               valueFrom:
                 secretKeyRef:
@@ -334,8 +141,8 @@ app-template:
                   name: nextcloud-credentials
                   key: admin-password
 
-            # Trusted domains
-            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.local localhost nextcloud.crauwels.xyz"
+            # Trusted domains (space-separated list)
+            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.example.com localhost"
 
             # Data directory
             NEXTCLOUD_DATA_DIR: "/var/www/html/data"
@@ -377,6 +184,34 @@ app-template:
 
             # Reverse proxy settings
             OVERWRITEPROTOCOL: "https"
+
+            # Phone region (ISO 3166-1 alpha-2)
+            # NC_DEFAULT_PHONE_REGION: "US"
+
+            # ---------------------------------------------------------------------
+            # SMTP Configuration (uncomment to enable)
+            # ---------------------------------------------------------------------
+            # SMTP_HOST: "smtp.example.com"
+            # SMTP_SECURE: "tls"          # ssl, tls, or empty
+            # SMTP_PORT: "587"            # 25, 465, or 587
+            # SMTP_AUTHTYPE: "LOGIN"      # LOGIN, PLAIN, or empty
+            # SMTP_NAME: "user@example.com"
+            # SMTP_PASSWORD: "your-smtp-password"
+            # MAIL_FROM_ADDRESS: "nextcloud"
+            # MAIL_DOMAIN: "example.com"
+
+            # ---------------------------------------------------------------------
+            # S3 Object Storage (uncomment to enable)
+            # ---------------------------------------------------------------------
+            # OBJECTSTORE_S3_BUCKET: "nextcloud"
+            # OBJECTSTORE_S3_REGION: "us-east-1"
+            # OBJECTSTORE_S3_HOST: "s3.amazonaws.com"
+            # OBJECTSTORE_S3_PORT: "443"
+            # OBJECTSTORE_S3_SSL: "true"
+            # OBJECTSTORE_S3_USEPATH_STYLE: "false"  # Set to "true" for MinIO
+            # OBJECTSTORE_S3_AUTOCREATE: "true"
+            # OBJECTSTORE_S3_KEY: "your-access-key"
+            # OBJECTSTORE_S3_SECRET: "your-secret-key"
 
           probes:
             liveness:
@@ -661,39 +496,66 @@ app-template:
           protocol: TCP
 
   # ===========================================================================
-  # INGRESS (Tailscale)
+  # INGRESS
   # ===========================================================================
   ingress:
     main:
       enabled: true
-      className: tailscale
+      className: ""  # nginx, traefik, etc.
       annotations:
-        tailscale.com/hostname: "nextcloud"
+        # For ingress-nginx:
+        # cert-manager.io/cluster-issuer: letsencrypt-prod
+        # nginx.ingress.kubernetes.io/proxy-body-size: "16G"
+        # nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+        # nginx.ingress.kubernetes.io/server-snippet: |
+        #   location = /.well-known/carddav {
+        #     return 301 $scheme://$host/remote.php/dav;
+        #   }
+        #   location = /.well-known/caldav {
+        #     return 301 $scheme://$host/remote.php/dav;
+        #   }
       hosts:
-        - host: nextcloud
+        - host: nextcloud.example.com
           paths:
             - path: /
               pathType: Prefix
               service:
                 identifier: main
                 port: http
+      tls: []
+        # - secretName: nextcloud-tls
+        #   hosts:
+        #     - nextcloud.example.com
 
   # ===========================================================================
-  # HTTPROUTE (Cilium Gateway API for .crauwels.xyz)
+  # HTTPROUTE (Gateway API)
   # ===========================================================================
-  route:
-    main:
-      enabled: true
-      parentRefs:
-        - name: external
-          namespace: kube-system
-          sectionName: https
-      hostnames:
-        - "nextcloud.crauwels.xyz"
-      rules:
-        - backendRefs:
-            - name: main
-              port: 80
+  # Uncomment for Cilium Gateway API, Envoy Gateway, or other Gateway API implementations
+  # route:
+  #   main:
+  #     enabled: true
+  #     parentRefs:
+  #       - name: my-gateway
+  #         namespace: gateway-system
+  #         sectionName: https
+  #     hostnames:
+  #       - "nextcloud.example.com"
+  #     rules:
+  #       - backendRefs:
+  #           - name: main
+  #             port: 80
+
+  # ===========================================================================
+  # CONFIGMAPS
+  # ===========================================================================
+  # For Redis session persistence (required for multi-replica deployments)
+  # configMaps:
+  #   php-config:
+  #     enabled: true
+  #     data:
+  #       redis-session.ini: |
+  #         session.save_handler = redis
+  #         session.save_path = "tcp://nextcloud-redis:6379?auth=${REDIS_HOST_PASSWORD}"
 
   # ===========================================================================
   # PERSISTENCE
@@ -702,7 +564,7 @@ app-template:
     data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-hdd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 100Gi
       advancedMounts:
@@ -716,7 +578,7 @@ app-template:
     postgresql-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-ssd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 10Gi
       advancedMounts:
@@ -727,13 +589,24 @@ app-template:
     redis-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: local-path-ssd
+      storageClass: ""  # Uses default StorageClass if empty
       accessMode: ReadWriteOnce
       size: 1Gi
       advancedMounts:
         redis:
           main:
             - path: /data
+
+    # Mount PHP config for Redis sessions
+    # php-config:
+    #   enabled: true
+    #   type: configMap
+    #   name: nextcloud-php-config
+    #   advancedMounts:
+    #     main:
+    #       main:
+    #         - path: /usr/local/etc/php/conf.d/redis-session.ini
+    #           subPath: redis-session.ini
 
   # ===========================================================================
   # SERVICE ACCOUNT
@@ -743,7 +616,181 @@ app-template:
     name: nextcloud
 
   # ===========================================================================
+  # SERVICE MONITOR (Prometheus)
+  # ===========================================================================
+  # Requires prometheus-operator / kube-prometheus-stack
+  # serviceMonitor:
+  #   main:
+  #     enabled: true
+  #     serviceName: main
+  #     endpoints:
+  #       - port: http
+  #         path: /ocs/v2.php/apps/serverinfo/api/v1/info
+  #         params:
+  #           format: ["json"]
+  #         interval: 60s
+  #         scrapeTimeout: 30s
+  #         # Authentication via bearer token if required
+  #         # bearerTokenSecret:
+  #         #   name: nextcloud-metrics-token
+  #         #   key: token
+
+  # ===========================================================================
+  # NETWORK POLICIES
+  # ===========================================================================
+  # Restrict network access to only necessary connections
+  # networkpolicies:
+  #   main:
+  #     enabled: true
+  #     controller: main
+  #     policyTypes:
+  #       - Ingress
+  #       - Egress
+  #     rules:
+  #       ingress:
+  #         # Allow traffic from ingress controller / gateway
+  #         - from:
+  #             - namespaceSelector: {}
+  #           ports:
+  #             - protocol: TCP
+  #               port: 80
+  #       egress:
+  #         # PostgreSQL
+  #         - to:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: postgresql
+  #           ports:
+  #             - protocol: TCP
+  #               port: 5432
+  #         # Redis
+  #         - to:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: redis
+  #           ports:
+  #             - protocol: TCP
+  #               port: 6379
+  #         # DNS
+  #         - to:
+  #             - namespaceSelector: {}
+  #           ports:
+  #             - protocol: UDP
+  #               port: 53
+  #             - protocol: TCP
+  #               port: 53
+  #         # External HTTPS (apps, updates, federation)
+  #         - to:
+  #             - ipBlock:
+  #                 cidr: 0.0.0.0/0
+  #           ports:
+  #             - protocol: TCP
+  #               port: 443
+  #         # SMTP (if configured)
+  #         # - to:
+  #         #     - ipBlock:
+  #         #         cidr: 0.0.0.0/0
+  #         #   ports:
+  #         #     - protocol: TCP
+  #         #       port: 587
+  #
+  #   postgresql:
+  #     enabled: true
+  #     controller: postgresql
+  #     policyTypes:
+  #       - Ingress
+  #     rules:
+  #       ingress:
+  #         - from:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: main
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: cron
+  #           ports:
+  #             - protocol: TCP
+  #               port: 5432
+  #
+  #   redis:
+  #     enabled: true
+  #     controller: redis
+  #     policyTypes:
+  #       - Ingress
+  #     rules:
+  #       ingress:
+  #         - from:
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: main
+  #             - podSelector:
+  #                 matchLabels:
+  #                   app.kubernetes.io/component: cron
+  #           ports:
+  #             - protocol: TCP
+  #               port: 6379
+
+  # ===========================================================================
   # DEFAULT POD OPTIONS
   # ===========================================================================
   defaultPodOptions:
     automountServiceAccountToken: false
+    # Pod Disruption Budget (useful when replicas > 1)
+    # podDisruptionBudget:
+    #   enabled: true
+    #   minAvailable: 1
+    #   # Or use maxUnavailable instead:
+    #   # maxUnavailable: 1
+
+    # Affinity rules
+    # affinity:
+    #   podAntiAffinity:
+    #     preferredDuringSchedulingIgnoredDuringExecution:
+    #       - weight: 100
+    #         podAffinityTerm:
+    #           labelSelector:
+    #             matchLabels:
+    #               app.kubernetes.io/name: nextcloud
+    #           topologyKey: kubernetes.io/hostname
+
+    # Node selector
+    # nodeSelector:
+    #   kubernetes.io/os: linux
+
+    # Tolerations
+    # tolerations:
+    #   - key: "node-role.kubernetes.io/control-plane"
+    #     operator: "Exists"
+    #     effect: "NoSchedule"
+
+    # Priority class
+    # priorityClassName: high-priority
+
+# =============================================================================
+# ADDITIONAL FEATURES (Add as separate controllers if needed)
+# =============================================================================
+#
+# Collabora Online (CODE):
+#   Add as a separate controller with collabora/code image
+#   Requires WOPI configuration in Nextcloud
+#
+# OnlyOffice Document Server:
+#   Add as a separate controller with onlyoffice/documentserver image
+#   Requires app configuration in Nextcloud
+#
+# Elasticsearch (Full-text search):
+#   Add as a separate controller with elasticsearch image
+#   Configure via ELASTICSEARCH_HOST env var
+#
+# Talk/TURN Server (coturn):
+#   Add as a separate controller with coturn/coturn image
+#   Requires UDP LoadBalancer for TURN traffic
+#
+# Backup/Restore:
+#   Use Velero or similar - add podAnnotations for backup hooks
+#   Example:
+#   defaultPodOptions:
+#     annotations:
+#       backup.velero.io/backup-volumes: data
+#       pre.hook.backup.velero.io/command: '["/bin/sh", "-c", "php occ maintenance:mode --on"]'
+#       post.hook.backup.velero.io/command: '["/bin/sh", "-c", "php occ maintenance:mode --off"]'
