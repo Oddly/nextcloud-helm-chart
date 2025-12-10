@@ -31,7 +31,7 @@ nextcloud:
   # ---------------------------------------------------------------------------
   # Trusted Domains (space-separated)
   # ---------------------------------------------------------------------------
-  trustedDomains: "nextcloud.local localhost"
+  trustedDomains: "nextcloud.local localhost nextcloud.crauwels.xyz"
 
   # ---------------------------------------------------------------------------
   # Data Directory
@@ -335,7 +335,7 @@ app-template:
                   key: admin-password
 
             # Trusted domains
-            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.local localhost"
+            NEXTCLOUD_TRUSTED_DOMAINS: "nextcloud.local localhost nextcloud.crauwels.xyz"
 
             # Data directory
             NEXTCLOUD_DATA_DIR: "/var/www/html/data"
@@ -655,7 +655,7 @@ app-template:
           protocol: TCP
 
   # ===========================================================================
-  # INGRESS
+  # INGRESS (Tailscale)
   # ===========================================================================
   ingress:
     main:
@@ -671,6 +671,23 @@ app-template:
               service:
                 identifier: main
                 port: http
+
+  # ===========================================================================
+  # HTTPROUTE (Cilium Gateway API for .crauwels.xyz)
+  # ===========================================================================
+  route:
+    main:
+      enabled: true
+      parentRefs:
+        - name: external
+          namespace: kube-system
+          sectionName: https
+      hostnames:
+        - "nextcloud.crauwels.xyz"
+      rules:
+        - backendRefs:
+            - name: main
+              port: 80
 
   # ===========================================================================
   # PERSISTENCE
