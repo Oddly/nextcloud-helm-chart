@@ -33,7 +33,8 @@ app-template:
         - "<your-domain.com>"
       rules:
         - backendRefs:
-            - name: main
+            # Use full service name: <release-name>-main
+            - name: nextcloud-main
               port: 80
 
   persistence:
