@@ -47,7 +47,7 @@ app-template:
         main:
           image:
             repository: nextcloud
-            tag: "30.0.2-apache"
+            tag: "32.0.2-apache"
 
           env:
             TZ: "UTC"
@@ -271,7 +271,7 @@ app-template:
         main:
           image:
             repository: nextcloud
-            tag: "30.0.2-apache"
+            tag: "32.0.2-apache"
 
           securityContext:
             runAsUser: 33
