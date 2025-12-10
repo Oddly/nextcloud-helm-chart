@@ -1,0 +1,42 @@
+# Example: Nextcloud with Gateway API (Cilium, Envoy Gateway, etc.)
+#
+# Install with:
+#   helm install nextcloud nextcloud-chart/nextcloud -n nextcloud -f gateway-api.yaml
+
+nextcloud:
+  adminUser: "<your-admin-username>"
+  adminPassword: "<your-secure-password>"
+
+app-template:
+  controllers:
+    main:
+      containers:
+        main:
+          env:
+            NEXTCLOUD_TRUSTED_DOMAINS: "<your-domain.com> localhost"
+            NC_DEFAULT_PHONE_REGION: "<YOUR-COUNTRY-CODE>"
+
+  # Disable traditional ingress
+  ingress:
+    main:
+      enabled: false
+
+  # Use Gateway API HTTPRoute
+  route:
+    main:
+      enabled: true
+      parentRefs:
+        - name: <your-gateway-name>
+          namespace: <gateway-namespace>
+          sectionName: https
+      hostnames:
+        - "<your-domain.com>"
+      rules:
+        - backendRefs:
+            - name: main
+              port: 80
+
+  persistence:
+    data:
+      storageClass: "<your-storage-class>"
+      size: 100Gi

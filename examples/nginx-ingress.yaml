@@ -1,0 +1,54 @@
+# Example: Nextcloud with nginx-ingress and cert-manager
+#
+# Install with:
+#   helm install nextcloud nextcloud-chart/nextcloud -n nextcloud -f nginx-ingress.yaml
+
+# Custom credentials (optional - auto-generated if not set)
+nextcloud:
+  adminUser: "<your-admin-username>"
+  adminPassword: "<your-secure-password>"
+
+app-template:
+  controllers:
+    main:
+      containers:
+        main:
+          env:
+            # Your domain(s) - space-separated
+            NEXTCLOUD_TRUSTED_DOMAINS: "<your-domain.com> localhost"
+            # Phone region for validation (ISO 3166-1 alpha-2)
+            NC_DEFAULT_PHONE_REGION: "<YOUR-COUNTRY-CODE>"
+
+  ingress:
+    main:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/proxy-body-size: "16G"
+        nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+        # CalDAV/CardDAV discovery
+        nginx.ingress.kubernetes.io/server-snippet: |
+          location = /.well-known/carddav {
+            return 301 $scheme://$host/remote.php/dav;
+          }
+          location = /.well-known/caldav {
+            return 301 $scheme://$host/remote.php/dav;
+          }
+      hosts:
+        - host: <your-domain.com>
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      tls:
+        - secretName: nextcloud-tls
+          hosts:
+            - <your-domain.com>
+
+  persistence:
+    data:
+      storageClass: "<your-storage-class>"  # or leave empty for default
+      size: 100Gi

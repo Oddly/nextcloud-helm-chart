@@ -1,0 +1,42 @@
+# Example: Nextcloud with Traefik ingress and cert-manager
+#
+# Install with:
+#   helm install nextcloud nextcloud-chart/nextcloud -n nextcloud -f traefik-ingress.yaml
+
+nextcloud:
+  adminUser: "<your-admin-username>"
+  adminPassword: "<your-secure-password>"
+
+app-template:
+  controllers:
+    main:
+      containers:
+        main:
+          env:
+            NEXTCLOUD_TRUSTED_DOMAINS: "<your-domain.com> localhost"
+            NC_DEFAULT_PHONE_REGION: "<YOUR-COUNTRY-CODE>"
+
+  ingress:
+    main:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        traefik.ingress.kubernetes.io/router.middlewares: nextcloud-redirectregex@kubernetescrd
+      hosts:
+        - host: <your-domain.com>
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+                port: http
+      tls:
+        - secretName: nextcloud-tls
+          hosts:
+            - <your-domain.com>
+
+  persistence:
+    data:
+      storageClass: "<your-storage-class>"
+      size: 100Gi

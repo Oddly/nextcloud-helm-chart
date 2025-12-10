@@ -58,6 +58,23 @@ This chart deploys:
 
 See [`values.yaml`](values.yaml) for default configuration and [`values-reference.yaml`](values-reference.yaml) for all available options.
 
+### Examples
+
+Ready-to-use example configurations are available in the [`examples/`](examples/) directory:
+
+| Example | Description |
+|---------|-------------|
+| [nginx-ingress.yaml](examples/nginx-ingress.yaml) | nginx-ingress with cert-manager TLS |
+| [traefik-ingress.yaml](examples/traefik-ingress.yaml) | Traefik ingress with cert-manager |
+| [gateway-api.yaml](examples/gateway-api.yaml) | Gateway API (Cilium, Envoy Gateway) |
+| [with-smtp.yaml](examples/with-smtp.yaml) | SMTP email configuration |
+
+Install with an example:
+
+```bash
+helm install nextcloud nextcloud-chart/nextcloud -n nextcloud -f examples/nginx-ingress.yaml
+```
+
 ### Minimal configuration
 
 The default `values.yaml` provides a working deployment. Common customizations:
