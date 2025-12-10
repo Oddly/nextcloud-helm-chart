@@ -1,5 +1,28 @@
-# Nextcloud Helm Chart - Minimal Configuration
+# Nextcloud Helm Chart
 # For all available options, see values-reference.yaml
+#
+# IMPORTANT: Install with release name "nextcloud":
+#   helm install nextcloud . -n nextcloud
+#
+# Credentials are auto-generated on first install. Retrieve with:
+#   kubectl get secret nextcloud-credentials -n nextcloud -o jsonpath='{.data.admin-password}' | base64 -d
+
+# Use an existing secret instead of auto-generating
+# existingSecret: "my-nextcloud-secret"
+
+# Nextcloud configuration
+nextcloud:
+  adminUser: "admin"
+  # adminPassword: ""  # Auto-generated if not set
+
+# PostgreSQL configuration
+postgresql:
+  user: "nextcloud"
+  # password: ""  # Auto-generated if not set
+
+# Redis configuration
+redis: {}
+  # password: ""  # Auto-generated if not set
 
 app-template:
   controllers:
@@ -12,6 +35,13 @@ app-template:
         securityContext:
           fsGroup: 33
           fsGroupChangePolicy: OnRootMismatch
+
+      initContainers:
+        wait-for-postgres:
+          image:
+            repository: busybox
+            tag: "1.36"
+          command: ["sh", "-c", "until nc -z nextcloud-postgresql 5432; do echo 'Waiting for PostgreSQL...'; sleep 2; done"]
 
       containers:
         main:
@@ -55,15 +85,6 @@ app-template:
             PHP_UPLOAD_LIMIT: "16G"
             APACHE_BODY_LIMIT: "0"
             OVERWRITEPROTOCOL: "https"
-            # SMTP Configuration (uncomment to enable)
-            # SMTP_HOST: "smtp.example.com"
-            # SMTP_SECURE: "tls"
-            # SMTP_PORT: "587"
-            # SMTP_AUTHTYPE: "LOGIN"
-            # SMTP_NAME: "user@example.com"
-            # SMTP_PASSWORD: "password"
-            # MAIL_FROM_ADDRESS: "nextcloud"
-            # MAIL_DOMAIN: "example.com"
 
           probes:
             liveness:
@@ -309,13 +330,12 @@ app-template:
 
   ingress:
     main:
-      enabled: true
-      className: ""  # Set to "nginx" for ingress-nginx
-      annotations:
-        # For ingress-nginx, uncomment:
-        # cert-manager.io/cluster-issuer: letsencrypt-prod
-        # nginx.ingress.kubernetes.io/proxy-body-size: "16G"
-        # nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+      enabled: false  # Disabled by default - configure as needed
+      className: ""   # Set to "nginx" for ingress-nginx, "tailscale" for Tailscale, etc.
+      # annotations:  # Uncomment for nginx-ingress with cert-manager
+      #   cert-manager.io/cluster-issuer: letsencrypt-prod
+      #   nginx.ingress.kubernetes.io/proxy-body-size: "16G"
+      #   nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
       hosts:
         - host: nextcloud.example.com
           paths:
@@ -324,10 +344,10 @@ app-template:
               service:
                 identifier: main
                 port: http
-      tls: []
-        # - secretName: nextcloud-tls
-        #   hosts:
-        #     - nextcloud.example.com
+      # tls:  # Uncomment for TLS with cert-manager
+      #   - secretName: nextcloud-tls
+      #     hosts:
+      #       - nextcloud.example.com
 
   # HTTPRoute for Gateway API (Cilium, Envoy Gateway, etc.)
   # Uncomment and configure if using Gateway API instead of Ingress
@@ -335,9 +355,9 @@ app-template:
   #   main:
   #     enabled: true
   #     parentRefs:
-  #       - name: my-gateway
-  #         namespace: gateway-namespace
-  #         sectionName: https
+  #       - name: external         # Gateway name
+  #         namespace: kube-system # Gateway namespace
+  #         sectionName: https     # Listener name
   #     hostnames:
   #       - "nextcloud.example.com"
   #     rules:
@@ -345,21 +365,11 @@ app-template:
   #           - name: main
   #             port: 80
 
-  # ConfigMaps for PHP/Redis session configuration
-  # Uncomment to enable Redis-based sessions (required for multi-replica)
-  # configMaps:
-  #   php-config:
-  #     enabled: true
-  #     data:
-  #       redis-session.ini: |
-  #         session.save_handler = redis
-  #         session.save_path = "tcp://nextcloud-redis:6379?auth=${REDIS_HOST_PASSWORD}"
-
   persistence:
     data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: ""  # Uses default StorageClass if empty
+      storageClass: ""
       accessMode: ReadWriteOnce
       size: 100Gi
       advancedMounts:
@@ -373,7 +383,7 @@ app-template:
     postgresql-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: ""  # Uses default StorageClass if empty
+      storageClass: ""
       accessMode: ReadWriteOnce
       size: 10Gi
       advancedMounts:
@@ -384,7 +394,7 @@ app-template:
     redis-data:
       enabled: true
       type: persistentVolumeClaim
-      storageClass: ""  # Uses default StorageClass if empty
+      storageClass: ""
       accessMode: ReadWriteOnce
       size: 1Gi
       advancedMounts:
@@ -392,77 +402,9 @@ app-template:
           main:
             - path: /data
 
-    # Uncomment to mount PHP config for Redis sessions
-    # php-config:
-    #   enabled: true
-    #   type: configMap
-    #   name: nextcloud-php-config
-    #   advancedMounts:
-    #     main:
-    #       main:
-    #         - path: /usr/local/etc/php/conf.d/redis-session.ini
-    #           subPath: redis-session.ini
-
   serviceAccount:
     create: true
     name: nextcloud
 
-  # ServiceMonitor for Prometheus (requires prometheus-operator)
-  # serviceMonitor:
-  #   main:
-  #     enabled: true
-  #     endpoints:
-  #       - port: http
-  #         path: /ocs/v2.php/apps/serverinfo/api/v1/info
-  #         params:
-  #           format: ["json"]
-  #         interval: 60s
-
-  # Network Policies - restrict traffic to only necessary connections
-  # networkpolicies:
-  #   main:
-  #     enabled: true
-  #     controller: main
-  #     policyTypes:
-  #       - Ingress
-  #       - Egress
-  #     rules:
-  #       ingress:
-  #         - from:
-  #             - namespaceSelector: {}  # Allow from any namespace (ingress controller)
-  #           ports:
-  #             - protocol: TCP
-  #               port: 80
-  #       egress:
-  #         - to:
-  #             - podSelector:
-  #                 matchLabels:
-  #                   app.kubernetes.io/component: postgresql
-  #           ports:
-  #             - protocol: TCP
-  #               port: 5432
-  #         - to:
-  #             - podSelector:
-  #                 matchLabels:
-  #                   app.kubernetes.io/component: redis
-  #           ports:
-  #             - protocol: TCP
-  #               port: 6379
-  #         - to:  # Allow DNS
-  #             - namespaceSelector: {}
-  #           ports:
-  #             - protocol: UDP
-  #               port: 53
-  #         - to:  # Allow external HTTPS (for apps, updates)
-  #             - ipBlock:
-  #                 cidr: 0.0.0.0/0
-  #           ports:
-  #             - protocol: TCP
-  #               port: 443
-
   defaultPodOptions:
     automountServiceAccountToken: false
-    # Pod Disruption Budget (useful when replicas > 1)
-    # podDisruptionBudget:
-    #   enabled: true
-    #   minAvailable: 1

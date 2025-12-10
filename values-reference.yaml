@@ -1,11 +1,15 @@
 # =============================================================================
-# NEXTCLOUD HELM CHART - COMPREHENSIVE CONFIGURATION REFERENCE
+# Nextcloud Helm Chart - Configuration Reference
 # =============================================================================
-# Uses bjw-s app-template library chart
-# Full-featured deployment with PostgreSQL, Redis, CronJob, and all Nextcloud options
 #
-# This file documents ALL available configuration options.
+# This file documents ALL available configuration options for this chart.
 # For a minimal working configuration, see values.yaml
+#
+# Chart: https://github.com/Oddly/nextcloud-helm-chart
+# Library: https://github.com/bjw-s/helm-charts (app-template v3.7.3)
+# Nextcloud: https://nextcloud.com/
+#
+# =============================================================================
 
 # =============================================================================
 # ENVIRONMENT VARIABLES REFERENCE
