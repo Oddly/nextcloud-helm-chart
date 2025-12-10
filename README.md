@@ -211,4 +211,4 @@ See [`values-reference.yaml`](values-reference.yaml) for the complete list of co
 
 ## License
 
-This chart is licensed under the MIT License.
+This chart is licensed under the [GNU General Public License v3.0](LICENSE).
