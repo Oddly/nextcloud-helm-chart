@@ -1,0 +1,71 @@
+name: Release Chart
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/**'
+      - 'README.md'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add dependency repositories
+        run: |
+          helm repo add bjw-s https://bjw-s-labs.github.io/helm-charts/
+
+      - name: Update dependencies
+        run: helm dependency update
+
+      - name: Package chart
+        run: |
+          helm package . -d .deploy
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true
+
+      - name: Create gh-pages branch if needed
+        run: |
+          if [ ! -d "gh-pages" ]; then
+            mkdir gh-pages
+            cd gh-pages
+            git init
+            git checkout -b gh-pages
+          fi
+
+      - name: Update repository index
+        run: |
+          cp .deploy/*.tgz gh-pages/
+          cd gh-pages
+          helm repo index . --url https://oddly.github.io/nextcloud-helm-chart
+
+      - name: Push to gh-pages
+        run: |
+          cd gh-pages
+          git add .
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git commit -m "Release $(ls *.tgz | head -1)" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages --force
