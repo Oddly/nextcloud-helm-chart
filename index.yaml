@@ -1,0 +1,46 @@
+apiVersion: v1
+entries:
+  nextcloud:
+  - apiVersion: v2
+    appVersion: 32.0.2
+    created: "2025-12-10T16:46:56.468968579Z"
+    dependencies:
+    - name: app-template
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.5.0
+    description: A Helm chart for Nextcloud using bjw-s app-template
+    digest: 8b9cd115624dc16c655387ac3e2f230d58cda41a00389b7a0114590f37c244ed
+    name: nextcloud
+    type: application
+    urls:
+    - https://oddly.github.io/nextcloud-helm-chart/nextcloud-2.0.0.tgz
+    version: 2.0.0
+  - apiVersion: v2
+    appVersion: 32.0.2
+    created: "2025-12-10T16:46:56.449369122Z"
+    dependencies:
+    - name: app-template
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 3.7.3
+    description: A Helm chart for Nextcloud using bjw-s app-template
+    digest: c225eae80180276fcef95d419115b1a3192455c8ee8f9024e8f18e8d095d2235
+    name: nextcloud
+    type: application
+    urls:
+    - https://oddly.github.io/nextcloud-helm-chart/nextcloud-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v2
+    appVersion: 30.0.2
+    created: "2025-12-10T16:46:56.440803242Z"
+    dependencies:
+    - name: app-template
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 3.7.3
+    description: A Helm chart for Nextcloud using bjw-s app-template
+    digest: e6bf5ea52c2a8ee4f60bdc5b661563a9a1ba2c3aaadac22066b2524db918fe7b
+    name: nextcloud
+    type: application
+    urls:
+    - https://oddly.github.io/nextcloud-helm-chart/nextcloud-1.0.0.tgz
+    version: 1.0.0
+generated: "2025-12-10T16:46:56.432140846Z"
