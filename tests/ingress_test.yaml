@@ -1,0 +1,39 @@
+suite: ingress tests
+templates:
+  - charts/app-template/templates/common.yaml
+tests:
+  - it: should create ingress by default
+    asserts:
+      - isKind:
+          of: Ingress
+        documentSelector:
+          path: metadata.name
+          value: nextcloud-main
+
+  - it: should use example.com host by default
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: nextcloud.example.com
+        documentSelector:
+          path: metadata.name
+          value: nextcloud-main
+
+  - it: should disable ingress when set
+    set:
+      app-template.ingress.main.enabled: false
+    asserts:
+      - not: true
+        isKind:
+          of: Ingress
+
+  - it: should set ingress class when specified
+    set:
+      app-template.ingress.main.className: nginx
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+        documentSelector:
+          path: metadata.name
+          value: nextcloud-main
