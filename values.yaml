@@ -403,8 +403,8 @@ app-template:
             - path: /data
 
   serviceAccount:
-    create: true
-    name: nextcloud
+    nextcloud:
+      enabled: true
 
   defaultPodOptions:
     automountServiceAccountToken: false

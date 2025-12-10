@@ -2,10 +2,10 @@ apiVersion: v2
 name: nextcloud
 description: A Helm chart for Nextcloud using bjw-s app-template
 type: application
-version: 1.1.0
+version: 2.0.0
 appVersion: "32.0.2"
 
 dependencies:
   - name: app-template
-    version: 3.7.3
+    version: 4.5.0
     repository: https://bjw-s-labs.github.io/helm-charts/
