@@ -4,15 +4,11 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '.github/**'
-      - 'README.md'
 
 jobs:
   release:
     permissions:
       contents: write
-      pages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,6 +33,7 @@ jobs:
 
       - name: Package chart
         run: |
+          mkdir -p .deploy
           helm package . -d .deploy
 
       - name: Checkout gh-pages
@@ -46,13 +43,10 @@ jobs:
           path: gh-pages
         continue-on-error: true
 
-      - name: Create gh-pages branch if needed
+      - name: Setup gh-pages directory
         run: |
-          if [ ! -d "gh-pages" ]; then
-            mkdir gh-pages
-            cd gh-pages
-            git init
-            git checkout -b gh-pages
+          if [ ! -d "gh-pages/.git" ]; then
+            mkdir -p gh-pages
           fi
 
       - name: Update repository index
@@ -61,11 +55,10 @@ jobs:
           cd gh-pages
           helm repo index . --url https://oddly.github.io/nextcloud-helm-chart
 
-      - name: Push to gh-pages
-        run: |
-          cd gh-pages
-          git add .
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git commit -m "Release $(ls *.tgz | head -1)" || echo "No changes to commit"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gh-pages --force
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
+          force_orphan: true
